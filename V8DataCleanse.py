@@ -3,21 +3,15 @@ import pandas as pd
 from io import BytesIO
 
 def data_cleanse(df):
-    # Convert empty strings to NaN for easier handling
-    df.replace("", pd.NA, inplace=True)
-    
-    # Define the columns to check based on their actual names
-    cols_to_check = ['Form template', 'Form_instance_ID', 'Form template version']
+    # Define the column indices to check (0-based index, so 0 to 9 corresponds to columns A to K, excluding index 3)
+    cols_to_check = [0, 1, 2, 4, 5, 6, 7, 8, 9]  # Exclude index 3 (column D)
     
     # Iterate over the rows and columns
     for col in cols_to_check:
         for i in range(1, len(df)):
-            if pd.isna(df.at[i, col]):
-                # Check if the corresponding cell in column 'Client name' is not empty
-                if not pd.isna(df.at[i, 'Client name']):
-                    # Fill the blank cell with the value from the cell above
-                    df.at[i, col] = df.at[i-1, col]
-
+            if pd.isna(df.iat[i, col]):
+                # Fill the blank cell with the value from the cell above
+                df.iat[i, col] = df.iat[i-1, col]
     return df
 
 def main():
@@ -31,7 +25,7 @@ def main():
         df = pd.read_excel(uploaded_file)
         
         st.write("Before cleaning:")
-        st.write(df)
+        st.write(df.head(20))  # Displaying the first 20 rows for inspection
         
         # "Clean Data" button
         if st.button("Clean Data"):
@@ -39,15 +33,17 @@ def main():
             cleaned_df = data_cleanse(df)
             
             st.write("After cleaning:")
-            st.write(cleaned_df)
+            st.write(cleaned_df.head(20))  # Displaying the first 20 rows for inspection
             
-            # Save the cleaned data to a CSV file
-            cleaned_file = "Valid8MeOutPut-clean.csv"
-            cleaned_df.to_csv(cleaned_file, index=False)
+            # Save the cleaned data to a BytesIO object as Excel
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                cleaned_df.to_excel(writer, index=False, sheet_name='Sheet1')
+                writer.save()
+            output.seek(0)
             
-            # Provide a downloadable link for the cleaned CSV file
-            csv_data = cleaned_df.to_csv(index=False).encode('utf-8')
-            st.download_button(label="Download Cleaned CSV", data=csv_data, file_name=cleaned_file, mime="text/csv")
+            # Provide a downloadable link for the cleaned Excel file
+            st.download_button(label="Download Cleaned Excel", data=output, file_name="Valid8MeOutput-clean.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 if __name__ == "__main__":
     main()
