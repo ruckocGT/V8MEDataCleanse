@@ -39,7 +39,6 @@ def main():
             output = BytesIO()
             with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
                 cleaned_df.to_excel(writer, index=False, sheet_name='Sheet1')
-                writer.save()
             output.seek(0)
             
             # Provide a downloadable link for the cleaned Excel file
